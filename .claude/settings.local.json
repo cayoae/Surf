@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''c:\\\\Users\\\\cayoa\\\\Desktop\\\\Eiji\\\\src'' -Recurse -Include *.ts,*.tsx | Select-Object FullName\")",
+      "Bash(powershell -Command:*)",
+      "Bash(pip show:*)",
+      "Bash(python -c:*)",
+      "Bash(start \"\" \"c:\\\\Users\\\\cayoa\\\\Desktop\\\\Eiji\\\\Surf\\\\mick_fanning_slowmo.mp4\")",
+      "Bash(git add:*)",
+      "Bash(python Video_Pose_Detector.py:*)",
+      "Bash(start \"\" \"c:\\\\Users\\\\cayoa\\\\Desktop\\\\Eiji\\\\Surf\\\\mick_fanning_detected.mp4\")",
+      "Bash(move:*)",
+      "Bash(cmd /c \"del /f \"\"\\\\?\\\\c:\\\\Users\\\\cayoa\\\\Desktop\\\\Eiji\\\\Surf\\\\nul\"\"\")",
+      "Bash(git init:*)",
+      "Bash(git remote add:*)",
+      "Bash(cmd /c \"dir /s\")",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
