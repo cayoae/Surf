@@ -1,5 +1,6 @@
 # Videos (arquivos grandes)
 *.mp4
+clips_treino/
 
 # Modelo YOLOv8 (baixar separadamente)
 *.pt
