@@ -1,114 +1,304 @@
-# Projeto: AI Surf Coach - Análise Biomecânica Comparativa
+# Surf Analyzer - Roadmap & Checklist
 
-**Versão:** 1.0  
-**Status:** Planejamento Técnico  
-**Core Tech:** Computer Vision, Deep Learning, Signal Processing
-
----
-
-## 1. Resumo Executivo
-O **AI Surf Coach** é um sistema de visão computacional projetado para democratizar o coaching de elite. O sistema utiliza vídeos de surfistas profissionais para criar um "Golden Standard" biomecânico. Ao receber o vídeo de um usuário amador, o sistema sincroniza temporalmente os movimentos e projeta um "Ghost Overlay" (esqueleto do profissional) sobre o vídeo do usuário, destacando visualmente onde a postura, compressão ou rotação diferem do ideal.
+**Versao:** 2.0
+**Status:** Em Desenvolvimento
+**Inicio:** Dezembro 2024
 
 ---
 
-## 2. Fluxo do Usuário (User Journey)
+## Visao Geral
 
-1.  **Upload:** O usuário envia um vídeo de uma manobra (ex: "Cutback de Frontside").
-2.  **Identificação:** O sistema detecta o surfista e classifica a manobra.
-3.  **Processamento:**
-    * O sistema busca no banco de dados a execução perfeita daquela manobra por um Pro.
-    * Alinha a velocidade do Pro para coincidir com a velocidade do usuário (Sync).
-    * Ajusta a altura e proporções do esqueleto do Pro para o corpo do usuário.
-4.  **Feedback Visual (Output):**
-    * O usuário vê seu vídeo com um esqueleto translúcido (Ghost) sobreposto.
-    * Linhas vermelhas aparecem onde o erro é crítico (ex: braço muito baixo, falta de flexão).
-    * Dashboard com métricas: "Velocidade de Entrada", "Ângulo de Ataque", "Score de Fluidez".
+Sistema de analise de surf usando IA que:
+1. Classifica o nivel do surfista (Beginner/Intermediate)
+2. Detecta erros de tecnica
+3. Sobrepoe "Ghost" do movimento ideal para comparacao visual
+4. Gera feedback personalizado
 
 ---
 
-## 3. Arquitetura Técnica
+## Arquitetura do Sistema
 
-### Fase A: Ingestão e Treinamento (O "Golden Standard")
-*Objetivo: Criar uma biblioteca vetorial de movimentos perfeitos.*
-
-1.  **Coleta de Dados:** Curadoria de vídeos da WSL/Free Surf em alta resolução (4k/60fps).
-2.  **Pose Extraction (YOLOv8-Pose):**
-    * Extração de 17 keypoints (COCO Format) frame a frame.
-    * *Output:* Array de vetores `(x, y, confidence)` por frame.
-3.  **Lifting 3D (VideoPose3D):**
-    * Conversão de coordenadas 2D para 3D `(x, y, z)` para mitigar diferenças de ângulo de câmera.
-4.  **Normalização:**
-    * Translação: Centralizar o quadril no ponto (0,0,0).
-    * Escala: Normalizar altura do esqueleto para 1.0 unidade.
-5.  **Armazenamento:** Salvar a sequência temporal normalizada em um Banco Vetorial (ex: FAISS ou JSON estruturado) rotulado por manobra.
-
-### Fase B: A Engine de Comparação (O Core)
-*Objetivo: Comparar matematicamente o Amador vs. Pro.*
-
-1.  **Pose Extraction (Usuário):** Mesmo processo da Fase A.
-2.  **Alinhamento Temporal (DTW - Dynamic Time Warping):**
-    * *Problema:* O Pro faz a cavada em 0.5s; o Amador leva 1.2s. A comparação frame-a-frame falharia.
-    * *Solução:* O algoritmo DTW encontra o caminho ideal de alinhamento, "esticando" o tempo do Pro para casar com os picos de movimento do usuário.
-3.  **Cálculo de Delta (Erro):**
-    * Calcular a distância Euclidiana ou Cosine Similarity entre os vetores de juntas (ombros, joelhos) sincronizados.
-    * Se `Erro > Limiar`, marcar frame como "Correção Necessária".
-
-### Fase C: Renderização e UI
-1.  **Projeção do Ghost:**
-    * Pegar o esqueleto 3D do Pro (já sincronizado).
-    * Reprojetar para 2D usando a perspectiva da câmera do usuário.
-    * Desenhar sobre o frame original com opacidade 50%.
-2.  **Highlight de Erro:**
-    * Usar gradiente de cor: Verde (Alinhado) -> Vermelho (Desalinhado).
-
----
-
-## 4. Stack Tecnológico Sugerido
-
-| Área | Tecnologia | Justificativa |
-| :--- | :--- | :--- |
-| **Linguagem** | Python 3.9+ | Padrão industrial para Data Science/CV. |
-| **CV Model** | **YOLOv8-Pose** (Ultralytics) | Rápido, robusto a oclusões (água/espuma) e fácil implementação. |
-| **3D Math** | **VideoPose3D** (Facebook) | Essencial para comparar ângulos de filmagem diferentes. |
-| **Sync Algo** | **FastDTW** (Python Lib) | Biblioteca eficiente para alinhamento temporal de séries. |
-| **Backend** | FastAPI | Para servir o modelo como API. |
-| **Frontend** | Streamlit (MVP) / React | Visualização rápida para validar o produto. |
-| **Processamento** | OpenCV + NumPy | Manipulação de imagem e cálculo vetorial. |
-
----
-
-## 5. Dicionário de Métricas (Biomecânica do Surf)
-
-Para o MVP, focaremos em 3 métricas críticas:
-
-1.  **Compression Ratio (Compressão):**
-    * *Definição:* Ângulo interno do joelho no ponto mais baixo da cavada (Bottom Turn).
-    * *Fórmula:* Ângulo entre vetores (Quadril-Joelho) e (Joelho-Tornozelo).
-    * *Feedback:* "Dobre mais os joelhos para gerar projeção."
-
-2.  **Torque (Rotação de Tronco):**
-    * *Definição:* Diferença angular entre a linha dos ombros e a linha da prancha/quadril.
-    * *Importância:* Define a radicalidade da manobra no Top Turn.
-
-3.  **Gaze (Foco Visual):**
-    * *Definição:* Vetor da cabeça (Nariz-Orelhas).
-    * *Regra:* "Para onde você olha é para onde você vai". O sistema verifica se o usuário está olhando para o lip ou para a base.
+```
+Usuario faz Upload
+        |
+        v
++------------------+
+|  VIDEO ANALYSIS  |
++------------------+
+        |
+        v
++------------------+     +------------------+
+| YOLO Detection   |---->| Wave Detection   |
+| - Surfista       |     | - Bounding box   |
+| - Pose (17 kpts) |     | - Pocket zone    |
+| - Prancha        |     | - Whitewash      |
++------------------+     +------------------+
+        |
+        v
++------------------+
+| PHASE DETECTION  |
+| Remada -> Drop   |
+| -> Bottom Turn   |
+| -> Trim          |
++------------------+
+        |
+        v
++------------------+
+| LEVEL CLASSIFIER |
+| Beginner or      |
+| Intermediate     |
++------------------+
+        |
+        v
++------------------+
+| SYNC & OVERLAY   |
+| T=0 no drop      |
+| Ghost do modelo  |
+| ideal sobreposto |
++------------------+
+        |
+        v
++------------------+
+|  OUTPUT VIDEO    |
+| + Feedback texto |
++------------------+
+```
 
 ---
 
-## 6. Roadmap de Implementação
+## Sistema de Classificacao de Niveis
 
-### Sprint 1: Prova de Conceito (PoC)
-- [ ] Script Python simples (input imagem -> output esqueleto desenhado).
-- [ ] Cálculo estático de ângulo de joelho em 1 imagem.
+### Beginner (L1-L2)
+| Criterio | Valor |
+|----------|-------|
+| Experiencia | < 20 horas |
+| Ondas | Whitewash, < 1ft |
+| Pop-up | Inconsistente, > 2 segundos |
+| Manobras | Nenhuma |
+| Foco do Sistema | Remada, Pop-up, Equilibrio |
 
-### Sprint 2: Análise de Vídeo (Single)
-- [ ] Processar vídeo completo frame-a-frame.
-- [ ] Plotar gráfico de variação do ângulo do joelho ao longo do tempo.
+### Intermediate (L3)
+| Criterio | Valor |
+|----------|-------|
+| Experiencia | 40+ sessoes |
+| Ondas | 2-3ft, ondas verdes |
+| Pop-up | Consistente, < 1.5 segundos |
+| Manobras | Bottom turn, Cutback |
+| Foco do Sistema | Bottom turn, Trim, Leitura de onda |
 
-### Sprint 3: O "Ghost" (Diferencial)
-- [ ] Implementar DTW para sincronizar dois vídeos.
-- [ ] Gerar vídeo de saída com o esqueleto do Pro sobreposto ao do amador.
+### Metricas para Classificacao Automatica
 
-### Sprint 4: Interface
-- [ ] Criar WebApp onde usuário faz upload e vê o resultado lado a lado.
+```python
+# BEGINNER detectado quando:
+- pop_up_time > 2.0 segundos
+- head_angle > 30 graus (olhando para baixo)
+- knee_angle > 150 graus (pernas retas)
+- keypoint_variance > threshold (instavel)
+- no_bottom_turn_detected == True
+
+# INTERMEDIATE detectado quando:
+- pop_up_time < 1.5 segundos
+- head_angle < 20 graus (olhando para frente)
+- knee_angle entre 90-120 graus
+- keypoint_variance < threshold (estavel)
+- bottom_turn_detected == True
+```
+
+---
+
+## Fases do Surf para Analise
+
+### Para Beginner
+1. **Remada** - Posicao deitado, bracadas
+2. **Pop-up/Drop** - Levantar na prancha
+3. **Equilibrio** - Stance, centro de gravidade
+
+### Para Intermediate
+1. **Drop** (refinamento)
+2. **Bottom Turn** - Curva na base da onda
+3. **Trim** - Manter linha na face
+
+---
+
+## Erros Comuns para Detectar
+
+### Beginner
+| Erro | Deteccao (Keypoints) | Feedback |
+|------|---------------------|----------|
+| Olhar para baixo | angulo cabeca > 30 graus | "Olhe para onde quer ir" |
+| Corpo muito alto | pouca compressao quadril-tornozelo | "Abaixe mais, flexione joelhos" |
+| Pop-up lento | tempo > 2s | "Pratique explosao no pop-up" |
+| Stance errado | pes muito juntos/separados | "Ajuste posicao dos pes" |
+| Bracos soltos | bracos longe do corpo | "Use bracos para equilibrio" |
+
+### Intermediate
+| Erro | Deteccao (Keypoints) | Feedback |
+|------|---------------------|----------|
+| Overturning | mudanca brusca + queda | "Curvas mais suaves" |
+| Digging rail | inclinacao excessiva | "Menos inclinacao lateral" |
+| Peso atras | centro massa deslocado | "Distribua peso no centro" |
+| Sem compressao | joelho > 140 graus na curva | "Comprima antes da curva" |
+| Timing errado | bottom turn muito tarde | "Inicie curva mais cedo" |
+
+---
+
+## CHECKLIST DE IMPLEMENTACAO
+
+### FASE 1: Infraestrutura Base
+- [x] Setup do repositorio Git
+- [x] Conectar GitHub com Netlify
+- [x] Criar landing page basica
+- [ ] Configurar Supabase (banco + storage)
+- [ ] Criar estrutura de pastas do projeto
+
+### FASE 2: Coleta de Dados (Golden Standard)
+- [ ] Criar lista de manobras para coletar
+  - [ ] Remada
+  - [ ] Pop-up/Drop
+  - [ ] Bottom turn frontside
+  - [ ] Bottom turn backside
+  - [ ] Trim
+- [ ] Coletar videos de profissionais (WSL, tutoriais)
+  - [ ] Minimo 10 videos por manobra
+  - [ ] Resolucao minima 720p
+  - [ ] Angulos variados (lateral, frontal)
+- [ ] Coletar videos de instrutores demonstrando tecnica
+- [ ] Organizar videos por nivel e manobra
+
+### FASE 3: Modelo de Deteccao de Onda
+- [ ] Pesquisar datasets de ondas existentes
+- [ ] Anotar dataset proprio (se necessario)
+  - [ ] Bounding box da onda
+  - [ ] Zona do "pocket"
+  - [ ] Whitewash
+- [ ] Treinar YOLOv8 customizado para ondas
+- [ ] Testar e validar deteccao
+
+### FASE 4: Pose Extraction & Normalizacao
+- [ ] Implementar extracao de pose com YOLOv8-Pose
+- [ ] Salvar keypoints por frame (JSON/CSV)
+- [ ] Implementar normalizacao:
+  - [ ] Centralizar quadril em (0,0)
+  - [ ] Normalizar escala (altura = 1.0)
+- [ ] Opcional: Lifting 3D com VideoPose3D
+
+### FASE 5: Deteccao de Fase
+- [ ] Definir criterios para cada fase:
+  - [ ] Remada: surfista deitado, atras da onda
+  - [ ] Drop: transicao deitado -> em pe
+  - [ ] Bottom turn: na base da onda, curvando
+  - [ ] Trim: na face da onda, horizontal
+- [ ] Implementar classificador de fase
+- [ ] Testar com videos diversos
+
+### FASE 6: Classificador de Nivel
+- [ ] Implementar calculo de metricas:
+  - [ ] Tempo de pop-up
+  - [ ] Angulo do joelho
+  - [ ] Angulo da cabeca (olhar)
+  - [ ] Variancia dos keypoints (estabilidade)
+  - [ ] Deteccao de bottom turn
+- [ ] Definir thresholds para cada nivel
+- [ ] Treinar/ajustar classificador
+- [ ] Validar com videos reais
+
+### FASE 7: Biblioteca de Movimentos Ideais
+- [ ] Processar videos de profissionais
+- [ ] Extrair poses normalizadas por fase
+- [ ] Criar "pose media ideal" para cada:
+  - [ ] Beginner: Remada ideal
+  - [ ] Beginner: Pop-up ideal
+  - [ ] Beginner: Stance ideal
+  - [ ] Intermediate: Bottom turn ideal
+  - [ ] Intermediate: Trim ideal
+- [ ] Armazenar em banco vetorial (FAISS ou JSON)
+
+### FASE 8: Sincronizacao Temporal (DTW)
+- [ ] Implementar Dynamic Time Warping
+- [ ] Definir T=0 como momento do drop
+- [ ] Alinhar video do usuario com modelo ideal
+- [ ] Testar sincronizacao com casos diversos
+
+### FASE 9: Sistema de Overlay (Ghost)
+- [ ] Implementar projecao do esqueleto ideal
+- [ ] Sistema de cores:
+  - [ ] Verde = alinhado com ideal
+  - [ ] Amarelo = pequeno desvio
+  - [ ] Vermelho = erro critico
+- [ ] Ajustar opacidade do ghost
+- [ ] Renderizar video final com overlay
+
+### FASE 10: Sistema de Feedback
+- [ ] Criar banco de mensagens de feedback
+- [ ] Mapear erros -> mensagens especificas
+- [ ] Implementar geracao de relatorio:
+  - [ ] Nivel detectado
+  - [ ] Erros encontrados
+  - [ ] Sugestoes de melhoria
+  - [ ] Score geral
+
+### FASE 11: Backend API
+- [ ] Criar API com FastAPI
+- [ ] Endpoints:
+  - [ ] POST /upload - receber video
+  - [ ] GET /status/{id} - status processamento
+  - [ ] GET /result/{id} - video + feedback
+- [ ] Integrar com Supabase Storage
+- [ ] Implementar fila de processamento
+
+### FASE 12: Frontend Dashboard
+- [ ] Pagina de upload de video
+- [ ] Visualizador de video processado
+- [ ] Display do nivel detectado
+- [ ] Lista de erros e sugestoes
+- [ ] Comparacao lado-a-lado (usuario vs ideal)
+- [ ] Historico de analises
+
+### FASE 13: Integracao & Deploy
+- [ ] Conectar frontend com backend API
+- [ ] Deploy do backend (Railway/Render)
+- [ ] Configurar Supabase producao
+- [ ] Testes end-to-end
+- [ ] Monitoramento e logs
+
+---
+
+## Stack Tecnologico
+
+| Area | Tecnologia | Uso |
+|------|------------|-----|
+| **Linguagem** | Python 3.11+ | Backend, ML |
+| **CV Model** | YOLOv8-Pose | Deteccao de pose |
+| **Wave Detection** | YOLOv8 custom | Detectar ondas |
+| **3D Lifting** | VideoPose3D | Converter 2D->3D |
+| **Sync** | FastDTW | Alinhamento temporal |
+| **Backend** | FastAPI | API REST |
+| **Frontend** | HTML/JS ou React | Dashboard |
+| **Hosting** | Netlify | Frontend |
+| **Database** | Supabase | PostgreSQL + Storage |
+| **Processing** | OpenCV, NumPy | Video/Imagem |
+
+---
+
+## Metricas de Sucesso (MVP)
+
+- [ ] Detectar pose em 95%+ dos frames
+- [ ] Classificar nivel com 80%+ precisao
+- [ ] Detectar fase correta em 85%+ dos casos
+- [ ] Overlay Ghost sincronizado visivelmente correto
+- [ ] Tempo de processamento < 2x duracao do video
+- [ ] Feedback relevante e acionavel
+
+---
+
+## Referencias e Fontes
+
+- [Swell Surf Camp - Niveis de Surfista](https://swellsurfcamp.com/what-level-of-surfer-am-i/)
+- [Solid Surf House - L1 a L4](https://solidsurfhouse.com/surf/surfing-skill-levels-explained-from-l1-to-l4/)
+- [ML Surfing - Pocket Detection](https://medium.com/@2oliver.ricken/machine-learning-surfing-15b2ad1158c4)
+- [The Inertia - Erros no Bottom Turn](https://www.theinertia.com/surf/5-common-mistakes-surfers-make-with-their-bottom-turn/)
+- [YOLOv8 Pose Documentation](https://docs.ultralytics.com/tasks/pose/)
+
+---
+
+*Ultima atualizacao: Dezembro 2024*
